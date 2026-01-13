@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoDeployHub - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .status-success { color: green; }
+        .status-failed { color: red; }
+        .status-building { color: orange; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">🚀 AutoDeployHub</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3">Hi, {{ user }}</span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Projects</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for project in projects %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="/project/{{ project.id }}" class="text-decoration-none text-dark">{{ project.name }}</a>
+                            <span class="badge bg-secondary rounded-pill">{{ project.branch }}</span>
+                        </li>
+                        {% endfor %}
+                        {% if not projects %}
+                        <li class="list-group-item text-muted">No projects registered.</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Built Images</h5>
+                    </div>
+                    <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                        {% for img in images %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <small class="text-muted d-block">{{ img.repository }}</small>
+                                    <span class="fw-bold">{{ img.tag }}</span>
+                                    <code class="d-block small text-secondary">{{ img.id[:12] }}</code>
+                                </div>
+                                <button onclick="deleteImage('{{ img.id }}')" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not images %}
+                        <div class="list-group-item text-muted">No local images found.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Recent Deployments</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Commit</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dep in deployments %}
+                                <tr>
+                                    <td>{{ dep.project_id }}</td>
+                                    <td><code>{{ dep.commit_hash[:7] if dep.commit_hash else 'N/A' }}</code></td>
+                                    <td>
+                                        <span class="fw-bold status-{{ dep.status }}">{{ dep.status|upper }}</span>
+                                    </td>
+                                    <td>{{ dep.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function deleteImage(imageId) {
+            if (!confirm('Are you sure you want to delete this image?')) return;
+            
+            try {
+                const response = await fetch(`/admin/images/${imageId}/delete`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    const data = await response.json();
+                    alert('Error: ' + data.detail);
+                }
+            } catch (err) {
+                alert('Failed to delete image: ' + err);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -9,3 +9,5 @@ passlib[bcrypt]
 python-multipart
 httpx
 alembic
+jinja2
+kubernetes

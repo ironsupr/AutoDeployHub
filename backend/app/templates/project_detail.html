@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ project.name }} - AutoDeployHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">🚀 AutoDeployHub</a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3">Hi, {{ user }}</span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Project: {{ project.name }}</h1>
+            <form action="/projects/{{ project.id }}/deploy" method="post">
+                <button type="submit" class="btn btn-primary">Trigger Manual Deploy</button>
+            </form>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <p><strong>GitHub URL:</strong> <a href="{{ project.github_url }}" target="_blank">{{ project.github_url }}</a></p>
+                <p><strong>Branch:</strong> <code>{{ project.branch }}</code></p>
+            </div>
+        </div>
+
+        <h3>Deployment History</h3>
+        <div class="accordion shadow-sm" id="deploymentAccordion">
+            {% for dep in deployments %}
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ dep.id }}">
+                        <div class="w-100 d-flex justify-content-between pe-3">
+                            <span>Commit: <code>{{ dep.commit_hash[:7] }}</code></span>
+                            <span class="fw-bold text-uppercase">{{ dep.status }}</span>
+                            <span>{{ dep.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse{{ dep.id }}" class="accordion-collapse collapse" data-bs-parent="#deploymentAccordion">
+                    <div class="accordion-body bg-dark text-white">
+                        <pre class="mb-0"><code>{{ dep.logs or 'No logs available.' }}</code></pre>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
