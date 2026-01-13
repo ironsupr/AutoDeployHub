@@ -10,6 +10,23 @@
 - **Security:** HMAC Webhook Signature Verification
 - **UI:** Jinja2 + Bootstrap 5 Dashboard
 
+## 🌟 Key Features
+
+### 🏗️ Core Infrastructure & Automation
+- **Automated CI/CD Pipeline**: Orchestrates code cloning, Docker building, and Kubernetes deployment.
+- **Kubernetes Integration**: Native support for deploying apps and services using the official K8s client.
+- **Docker Management**: Automated image building and manual image cleanup (RMI) from the UI.
+
+### 🛡️ Security & Authentication
+- **GitHub OAuth**: Secure private dashboard access synchronized with GitHub accounts.
+- **Webhook Security**: HMAC-SHA256 signature verification for all incoming GitHub push events.
+- **JWT Sessions**: Secure session management using encrypted HttpOnly cookies.
+
+### 📊 Monitoring & Control
+- **Real-time Deployment Logs**: Detailed, timestamped logs for every phase of the deployment process.
+- **Visual Dashboard**: View project health, deployment history, and local infrastructure status.
+- **Manual Triggers & Rollbacks**: Trigger deployments manually or rollback to any previous successful build.
+
 ## 🚀 Getting Started
 
 ### Prerequisites

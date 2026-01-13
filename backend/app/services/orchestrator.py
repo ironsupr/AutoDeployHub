@@ -4,7 +4,7 @@ from app.models.deployment import Deployment
 from app.services.git import git_service
 from app.services.docker import docker_service
 from app.services.k8s import k8s_service
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Orchestrator:
     def trigger_deployment(self, db: Session, project: Project, commit_hash: str):
@@ -64,9 +64,50 @@ class Orchestrator:
             add_log(f"FATAL ERROR: {str(e)}")
             deployment.status = "failed"
         
-        deployment.finished_at = datetime.utcnow()
+        deployment.finished_at = datetime.now(timezone.utc)
         add_log(f"Deployment process finished with status: {deployment.status}")
         db.commit()
         return deployment
+
+    def rollback(self, db: Session, project: Project, target_deployment: Deployment):
+        # 1. Create a new deployment record for the rollback event
+        rollback_deployment = Deployment(
+            project_id=project.id,
+            commit_hash=f"ROLLBACK-{target_deployment.commit_hash[:7]}",
+            status="deploying",
+            logs=f"Rollback initiated to commit {target_deployment.commit_hash}\n"
+        )
+        db.add(rollback_deployment)
+        db.commit()
+        db.refresh(rollback_deployment)
+
+        def add_log(message: str):
+            rollback_deployment.logs += f"[{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}] {message}\n"
+            db.commit()
+
+        try:
+            # We assume the image still exists locally or in the registry
+            image_name = f"autodeployhub/{project.name}:{target_deployment.commit_hash[:7]}"
+            if target_deployment.commit_hash == "manual":
+                image_name = f"autodeployhub/{project.name}:latest"
+
+            add_log(f"Rolling back to image: {image_name}")
+            
+            success = k8s_service.update_image(project.name.lower(), image_name)
+            
+            if success:
+                add_log("Successfully patched Kubernetes deployment.")
+                rollback_deployment.status = "success"
+            else:
+                add_log("ERROR: Kubernetes patch failed.")
+                rollback_deployment.status = "failed"
+
+        except Exception as e:
+            add_log(f"FATAL ERROR during rollback: {str(e)}")
+            rollback_deployment.status = "failed"
+
+        rollback_deployment.finished_at = datetime.now(timezone.utc)
+        db.commit()
+        return rollback_deployment
 
 orchestrator = Orchestrator()

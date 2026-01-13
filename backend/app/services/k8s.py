@@ -47,4 +47,23 @@ class K8sService:
             if temp_manifest.exists():
                 os.remove(temp_manifest)
 
+    def update_image(self, project_name: str, image_name: str):
+        """
+        Updates an existing deployment to use a new image.
+        """
+        try:
+            api_instance = client.AppsV1Api()
+            # Read current deployment
+            deployment = api_instance.read_namespaced_deployment(name=project_name, namespace="default")
+            
+            # Update image
+            deployment.spec.template.spec.containers[0].image = image_name
+            
+            # Patch deployment
+            api_instance.patch_namespaced_deployment(name=project_name, namespace="default", body=deployment)
+            return True
+        except Exception as e:
+            print(f"K8s Patch failed: {str(e)}")
+            return False
+
 k8s_service = K8sService()

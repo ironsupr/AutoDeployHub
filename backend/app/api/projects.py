@@ -3,10 +3,22 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.db.session import get_db
 from app.models.project import Project as ProjectModel
+from app.models.deployment import Deployment as DeploymentModel
 from app.schemas.project import Project, ProjectCreate, ProjectUpdate
 from app.services.orchestrator import orchestrator
 
 router = APIRouter()
+
+@router.post("/{project_id}/rollback/{deployment_id}")
+def rollback_project(project_id: int, deployment_id: int, db: Session = Depends(get_db)):
+    db_project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
+    target_deployment = db.query(DeploymentModel).filter(DeploymentModel.id == deployment_id).first()
+    
+    if not db_project or not target_deployment:
+        raise HTTPException(status_code=404, detail="Project or Deployment not found")
+        
+    deployment = orchestrator.rollback(db, db_project, target_deployment)
+    return {"message": "Rollback triggered", "deployment_id": deployment.id}
 
 @router.post("/", response_model=Project, status_code=status.HTTP_201_CREATED)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):

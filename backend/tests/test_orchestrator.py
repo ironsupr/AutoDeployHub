@@ -48,3 +48,21 @@ def test_trigger_deployment_failure(mock_db, mock_project):
         
         assert deployment.status == "failed"
         assert "FATAL ERROR: Clone failed" in deployment.logs
+
+def test_rollback_success(mock_db, mock_project):
+    mock_target_deployment = Deployment(
+        id=10,
+        project_id=1,
+        commit_hash="targetcommithash",
+        status="success"
+    )
+
+    with patch("app.services.orchestrator.k8s_service") as mock_k8s:
+        mock_k8s.update_image.return_value = True
+        
+        deployment = orchestrator.rollback(mock_db, mock_project, mock_target_deployment)
+        
+        assert deployment.status == "success"
+        assert "ROLLBACK-targetc" in deployment.commit_hash
+        assert "Successfully patched Kubernetes deployment" in deployment.logs
+        mock_k8s.update_image.assert_called_once_with("test-project", "autodeployhub/test-project:targetc")
